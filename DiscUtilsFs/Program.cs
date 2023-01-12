@@ -359,7 +359,7 @@ mountdir    Directory where to mount the file system.
 
         var part_content = IsDevicePath(fsPath)
             ? OpenDevice(fsPath, access)
-            : File.Open(fsPath, FileMode.Open, access);
+            : File.Open(fsPath, FileMode.Open, access, FileShare.Read);
 
         if (Path.GetExtension(fsPath).Equals(".iso", StringComparison.OrdinalIgnoreCase))
         {
