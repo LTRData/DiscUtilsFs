@@ -96,6 +96,7 @@ public static class Program
             var fuse_args = args.Where(arg =>
                 !arg.StartsWith(VhdKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(TmpKey, StringComparison.Ordinal) &&
+                !arg.StartsWith(DiscardKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(FsKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(PartKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(NoExecKey, StringComparison.Ordinal) &&
