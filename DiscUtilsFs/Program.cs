@@ -210,6 +210,18 @@ mountdir    Directory where to mount the file system.
             if (file_system.CanWrite)
             {
                 logger?.Info($"Read-write file system");
+
+                if (file_system.IsThreadSafe)
+                {
+                    logger?.Info($"Multi-thread aware file system");
+                }
+                else
+                {
+                    logger?.Info($"File system requires single thread operation");
+
+                    fuse_args = fuse_args
+                        .Append("-s");
+                }
             }
             else
             {
@@ -219,18 +231,6 @@ mountdir    Directory where to mount the file system.
                     .Append("-o").Append("ro,noforget,kernel_cache");
 
                 dokan_options |= DokanOptions.WriteProtection;
-            }
-
-            if (file_system.IsThreadSafe)
-            {
-                logger?.Info($"Multi-thread aware file system");
-            }
-            else
-            {
-                logger?.Info($"File system requires single thread operation");
-
-                fuse_args = fuse_args
-                    .Append("-s");
             }
 
             if (file_system is DiscUtils.Ntfs.NtfsFileSystem ntfs)
@@ -285,7 +285,7 @@ mountdir    Directory where to mount the file system.
                         Console.WriteLine("Press Ctrl+C to dismount.");
                     }
 
-                    dokan_discutils.Mount(mount_point, dokan_options, !file_system.IsThreadSafe, logger);
+                    dokan_discutils.Mount(mount_point, dokan_options, file_system.CanWrite && !file_system.IsThreadSafe, logger);
 
                     Console.WriteLine("Dismounted.");
                 }
@@ -350,7 +350,15 @@ mountdir    Directory where to mount the file system.
             VolumeLabel = "DiscardFs"
         });
 
-        vfs.CreateFile += (sender, e) => e.Result = vfs.AddFile(e.Path, (mode, access) => Stream.Null);
+        var lockObj = new object();
+
+        vfs.CreateFile += (sender, e) =>
+        {
+            lock (lockObj)
+            {
+                e.Result = vfs.AddFile(e.Path, (mode, access) => Stream.Null);
+            }
+        };
 
         return vfs;
     }
@@ -360,16 +368,24 @@ mountdir    Directory where to mount the file system.
         var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
         {
             HasSecurity = false,
-            IsThreadSafe = false,
+            IsThreadSafe = true,
             VolumeLabel = "TmpFs"
         });
 
-        vfs.CreateFile += (sender, e) => e.Result = vfs.AddFile(e.Path,
-                                                                new SparseMemoryStream(new(65536), FileAccess.ReadWrite),
-                                                                DateTime.UtcNow,
-                                                                DateTime.UtcNow,
-                                                                DateTime.UtcNow,
-                                                                FileAttributes.Normal);
+        var lockObj = new object();
+
+        vfs.CreateFile += (sender, e) =>
+        {
+            lock (lockObj)
+            {
+                e.Result = vfs.AddFile(e.Path,
+                                       new SparseMemoryStream(new(65536), FileAccess.ReadWrite),
+                                       DateTime.UtcNow,
+                                       DateTime.UtcNow,
+                                       DateTime.UtcNow,
+                                       FileAttributes.Normal);
+            }
+        };
 
         return vfs;
     }
