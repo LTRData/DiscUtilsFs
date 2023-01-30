@@ -61,6 +61,7 @@ public static class Program
     private const string PartKey = "--part";
     private const string FsKey = "--fs";
     private const string TmpKey = "--tmp";
+    private const string DiscardKey = "--discard";
     private const string DebugKey = "-d";
     private const string VersionKey = "-V";
     private const string WritableKey = "-w";
@@ -143,6 +144,10 @@ public static class Program
             {
                 file_system = InitializeTmpFs();
             }
+            else if (arguments.ContainsKey(DiscardKey))
+            {
+                file_system = InitializeDiscardFs();
+            }
             else
             {
                 Console.WriteLine(@"DiscUtilsFs
@@ -156,6 +161,9 @@ DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
 
 --tmp       Creates a temporary file system with in-memory file allocation
             that only last while the file system is mounted.
+
+--discard   Creates a discarding file system that ignores data written to
+            files within the file system.
 
 --vhd       Opens a disk image file. Supported formats are currently vhd,
             vhdx, vdi, vmdk, dmg and raw formats.
@@ -258,9 +266,28 @@ mountdir    Directory where to mount the file system.
                 {
                     Dokan.Init();
 
+                    if (mount_point is not null)
+                    {
+                        var drive = new DriveInfo(mount_point);
+
+                        Console.CancelKeyPress += (sender, e) =>
+                        {
+                            if (!dokan_discutils.IsDisposed && drive.IsReady)
+                            {
+                                e.Cancel = true;
+
+                                Console.WriteLine("Dismounting...");
+
+                                Dokan.RemoveMountPoint(mount_point);
+                            }
+                        };
+
+                        Console.WriteLine("Press Ctrl+C to dismount.");
+                    }
+
                     dokan_discutils.Mount(mount_point, dokan_options, !file_system.IsThreadSafe, logger);
 
-                    logger?.Debug($"Dismounted.");
+                    Console.WriteLine("Dismounted.");
                 }
                 catch (DokanException ex)
                 {
@@ -314,29 +341,28 @@ mountdir    Directory where to mount the file system.
         }
     }
 
+    private static IFileSystem InitializeDiscardFs()
+    {
+        var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
+        {
+            HasSecurity = false,
+            IsThreadSafe = true,
+            VolumeLabel = "DiscardFs"
+        });
+
+        vfs.CreateFile += (sender, e) => e.Result = vfs.AddFile(e.Path, (mode, access) => Stream.Null);
+
+        return vfs;
+    }
+
     private static IFileSystem InitializeTmpFs()
     {
-        IFileSystem file_system;
-
         var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
         {
             HasSecurity = false,
             IsThreadSafe = false,
-            VolumeLabel = "VirtualFs"
+            VolumeLabel = "TmpFs"
         });
-
-#if SAMPLE_FILE
-
-        var stream = new MemoryStream();
-        var bytes = Encoding.Default.GetBytes("HELLO WORLD!\n\n");
-        stream.Write(bytes);
-
-        vfs.AddFile("subdir" + Path.DirectorySeparatorChar + "file.txt", (mode, access) => SparseStream.FromStream(stream, Ownership.None))
-            .Length = stream.Length;
-
-        vfs.UpdateUsedSpace();
-
-#endif
 
         vfs.CreateFile += (sender, e) => e.Result = vfs.AddFile(e.Path,
                                                                 new SparseMemoryStream(new(65536), FileAccess.ReadWrite),
@@ -345,9 +371,7 @@ mountdir    Directory where to mount the file system.
                                                                 DateTime.UtcNow,
                                                                 FileAttributes.Normal);
 
-        file_system = vfs;
-
-        return file_system;
+        return vfs;
     }
 
     private static IFileSystem? InitializeFromFsImage(string fsPath, FileAccess access)
