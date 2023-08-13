@@ -286,7 +286,7 @@ mountdir    Directory where to mount the file system.
                         Console.WriteLine("Press Ctrl+C to dismount.");
                     }
 
-                    dokan_discutils.Mount(mount_point, dokan_options, file_system.CanWrite && !file_system.IsThreadSafe, logger);
+                    dokan_discutils.Mount(mount_point!, dokan_options, file_system.CanWrite && !file_system.IsThreadSafe, logger);
 
                     Console.WriteLine("Dismounted.");
                 }
