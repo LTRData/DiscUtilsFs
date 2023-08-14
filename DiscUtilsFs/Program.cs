@@ -404,6 +404,11 @@ mountdir    Directory where to mount the file system.
 
         if (Path.GetExtension(fsPath).Equals(".iso", StringComparison.OrdinalIgnoreCase))
         {
+            if (DiscUtils.Udf.UdfReader.Detect(part_content))
+            {
+                return new DiscUtils.Udf.UdfReader(part_content);
+            }
+
             return new DiscUtils.Iso9660.CDReader(part_content, joliet: true);
         }
         else
