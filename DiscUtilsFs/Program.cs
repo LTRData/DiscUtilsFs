@@ -104,16 +104,17 @@ public static class Program
                 !arg.StartsWith(WritableKey, StringComparison.Ordinal))
                 .Prepend(typeof(Program).Assembly.GetName().Name ?? "DiscUtilsFs");
 
-            var dokan_options = default(DokanOptions);
-
-            var mount_point = args
-                .Where(arg => !arg.StartsWith("-", StringComparison.Ordinal))
-                .LastOrDefault();
-
             if (arguments.ContainsKey(VersionKey))
             {
                 Console.WriteLine($"DiscUtilsFs version: {typeof(Program).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version}");
             }
+
+            var dokan_options = default(DokanOptions);
+
+            var mount_point = args
+                .Where(arg => !arg.StartsWith("-", StringComparison.Ordinal))
+                .LastOrDefault()
+                ?? throw new InvalidOperationException("Missing mount point");
 
             var access = arguments.ContainsKey(WritableKey)
                 ? FileAccess.ReadWrite
@@ -174,7 +175,7 @@ DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
 
 --fs        Opens a raw file system image file.
 
--d          Debug messag output to terminal. Implies -f.
+-d          Debug message output to terminal. Implies -f.
 
 -f          Foreground operation.
 
@@ -198,7 +199,7 @@ mountdir    Directory where to mount the file system.
                 }
             }
 
-            if (file_system == null)
+            if (file_system is null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Error.WriteLine("No supported file system found.");
@@ -267,24 +268,22 @@ mountdir    Directory where to mount the file system.
                 {
                     Dokan.Init();
 
-                    if (mount_point is not null)
+                    var drive = new DriveInfo(mount_point);
+
+                    Console.CancelKeyPress += (sender, e) =>
                     {
-                        var drive = new DriveInfo(mount_point);
-
-                        Console.CancelKeyPress += (sender, e) =>
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            && !dokan_discutils.IsDisposed && drive.IsReady)
                         {
-                            if (!dokan_discutils.IsDisposed && drive.IsReady)
-                            {
-                                e.Cancel = true;
+                            e.Cancel = true;
 
-                                Console.WriteLine("Dismounting...");
+                            Console.WriteLine("Dismounting...");
 
-                                Dokan.RemoveMountPoint(mount_point);
-                            }
-                        };
+                            Dokan.RemoveMountPoint(mount_point);
+                        }
+                    };
 
-                        Console.WriteLine("Press Ctrl+C to dismount.");
-                    }
+                    Console.WriteLine("Press Ctrl+C to dismount.");
 
                     dokan_discutils.Mount(mount_point!, dokan_options, file_system.CanWrite && !file_system.IsThreadSafe, logger);
 
@@ -315,6 +314,8 @@ mountdir    Directory where to mount the file system.
                 try
                 {
                     fuse_discutils.Mount(fuse_args, logger);
+
+                    Console.WriteLine("Dismounted.");
 
                     logger?.Debug($"Dismounted.");
                 }
@@ -438,12 +439,12 @@ mountdir    Directory where to mount the file system.
 
         var partitions = disk.Partitions;
 
-        if (partNo > 0 && (partitions == null || partNo > partitions.Count))
+        if (partNo > 0 && (partitions is null || partNo > partitions.Count))
         {
             throw new DriveNotFoundException($"Partition {partNo} not found");
         }
 
-        if (partitions == null || partNo == 0 || partitions.Count == 0)
+        if (partitions is null || partNo == 0 || partitions.Count == 0)
         {
             var disk_content = disk.Content;
 
