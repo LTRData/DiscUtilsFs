@@ -6,24 +6,23 @@ using DiscUtils.VirtualFileSystem;
 using DokanNet;
 using FuseDotNet;
 using FuseDotNet.Extensions;
-using FuseDotNet.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable IDE0057 // Use range operator
+#pragma warning disable CA1865 // Use char overload
 
 namespace DiscUtilsFs;
 
 internal static class DiscUtilsSupport
 {
     private static readonly Assembly[] Asms =
-    {
+    [
         typeof(DiscUtils.Btrfs.BtrfsFileSystem).Assembly,
         typeof(DiscUtils.Ext.ExtFileSystem).Assembly,
         typeof(DiscUtils.Fat.FatFileSystem).Assembly,
@@ -44,7 +43,7 @@ internal static class DiscUtilsSupport
         typeof(DiscUtils.Vmdk.Disk).Assembly,
         typeof(DiscUtils.Xfs.XfsFileSystem).Assembly,
         typeof(ExFat.DiscUtils.ExFatFileSystem).Assembly
-    };
+    ];
 
     public static void RegisterAssemblies()
     {
@@ -343,7 +342,7 @@ mountdir    Directory where to mount the file system.
         }
     }
 
-    private static IFileSystem InitializeDiscardFs()
+    private static VirtualFileSystem InitializeDiscardFs()
     {
         var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
         {
@@ -365,7 +364,7 @@ mountdir    Directory where to mount the file system.
         return vfs;
     }
 
-    private static IFileSystem InitializeTmpFs()
+    private static VirtualFileSystem InitializeTmpFs()
     {
         var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
         {
@@ -399,7 +398,7 @@ mountdir    Directory where to mount the file system.
             throw new InvalidOperationException($"Missing value for argument: {FsKey}");
         }
 
-        var part_content = IsDevicePath(fsPath)
+        Stream part_content = IsDevicePath(fsPath)
             ? OpenDevice(fsPath, access)
             : File.Open(fsPath, FileMode.Open, access, FileShare.Read);
 
@@ -418,7 +417,7 @@ mountdir    Directory where to mount the file system.
         }
     }
 
-    private static IFileSystem? InitializeFromVhd(string vhdPath, string partNoStr, FileAccess access)
+    private static DiscFileSystem? InitializeFromVhd(string vhdPath, string partNoStr, FileAccess access)
     {
         if (string.IsNullOrWhiteSpace(vhdPath))
         {
@@ -464,7 +463,7 @@ mountdir    Directory where to mount the file system.
         }
     }
 
-    private static Stream OpenDevice(string fsPath, FileAccess access)
+    private static AligningStream OpenDevice(string fsPath, FileAccess access)
     {
         var diskStream = new PhysicalDeviceStream(fsPath, access);
         var deviceSize = diskStream.Length;

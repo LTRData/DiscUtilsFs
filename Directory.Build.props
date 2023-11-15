@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net48</TargetFrameworks>
+    <TargetFrameworks>net8.0;netstandard2.1;net48</TargetFrameworks>
     <OutputPath>../$(Configuration)/</OutputPath>
     <LangVersion>Latest</LangVersion>
     <Nullable>enable</Nullable>
