@@ -65,6 +65,7 @@ public static class Program
     private const string VersionKey = "-V";
     private const string WritableKey = "-w";
     private const string MetaFilesKey = "-m";
+    private const string NetRedirKey = "-n";
     private const string NoExecKey = "--noexec";
 
     public static int Main(params string[] args)
@@ -100,6 +101,7 @@ public static class Program
                 !arg.StartsWith(PartKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(NoExecKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(MetaFilesKey, StringComparison.Ordinal) &&
+                !arg.StartsWith(NetRedirKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(WritableKey, StringComparison.Ordinal))
                 .Prepend(typeof(Program).Assembly.GetName().Name ?? "DiscUtilsFs");
 
@@ -180,6 +182,8 @@ DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
 
 -m          For NTFS, expose meta files as normal files.
 
+-n          Creates a network redirector based file system.
+
 -w          Writable mode, for file system implementations that support it.
             Allows modifications to file system.
 
@@ -254,6 +258,11 @@ mountdir    Directory where to mount the file system.
                     options |= DokanDiscUtilsOptions.BlockExecute;
                 }
 
+                if (arguments.ContainsKey(NetRedirKey))
+                {
+                    dokan_options |= DokanOptions.NetworkDrive;
+                }
+
                 using var dokan_discutils = new DokanDiscUtils(file_system, options);
 
                 if (dokan_discutils.NamedStreams)
@@ -284,7 +293,13 @@ mountdir    Directory where to mount the file system.
 
                     Console.WriteLine("Press Ctrl+C to dismount.");
 
-                    dokan_discutils.Mount(mount_point!, dokan_options, file_system.CanWrite && !file_system.IsThreadSafe, logger);
+                    dokan_discutils.Mount(mount_point!,
+                                          dokan_options,
+                                          file_system.CanWrite && !file_system.IsThreadSafe,
+                                          version: 200,
+                                          timeout: TimeSpan.FromSeconds(20.0),
+                                          uncName: dokan_options.HasFlag(DokanOptions.NetworkDrive) ? @$"\DiscUtilsFs\{mount_point[0]}" : null!,
+                                          logger);
 
                     Console.WriteLine("Dismounted.");
                 }
@@ -342,9 +357,18 @@ mountdir    Directory where to mount the file system.
         }
     }
 
-    private static VirtualFileSystem InitializeDiscardFs()
+    private class MemoryBasedVirtualFileSystem(VirtualFileSystemOptions options) : VirtualFileSystem(options)
     {
-        var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
+#if NETCOREAPP
+        public override long AvailableSpace => GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+#else
+        public override long AvailableSpace => 10 << 20;
+#endif
+    }
+
+    private static MemoryBasedVirtualFileSystem InitializeDiscardFs()
+    {
+        var vfs = new MemoryBasedVirtualFileSystem(new VirtualFileSystemOptions
         {
             HasSecurity = false,
             IsThreadSafe = true,
@@ -364,9 +388,9 @@ mountdir    Directory where to mount the file system.
         return vfs;
     }
 
-    private static VirtualFileSystem InitializeTmpFs()
+    private static MemoryBasedVirtualFileSystem InitializeTmpFs()
     {
-        var vfs = new VirtualFileSystem(new VirtualFileSystemOptions
+        var vfs = new MemoryBasedVirtualFileSystem(new VirtualFileSystemOptions
         {
             HasSecurity = false,
             IsThreadSafe = true,
