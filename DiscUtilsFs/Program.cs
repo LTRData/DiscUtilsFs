@@ -3,6 +3,7 @@ using DiscUtils.Dokan;
 using DiscUtils.Fuse;
 using DiscUtils.Streams;
 using DiscUtils.VirtualFileSystem;
+using DiscUtils.Wim;
 using DokanNet;
 using FuseDotNet;
 using FuseDotNet.Extensions;
@@ -84,6 +85,11 @@ public static class Program
 
                     if (pos < 0)
                     {
+                        pos = x.IndexOf(':');
+                    }
+
+                    if (pos < 0)
+                    {
                         return new KeyValuePair<string, string?>(x, null);
                     }
                     else
@@ -131,7 +137,15 @@ public static class Program
 
             IFileSystem? file_system;
 
-            if (arguments.TryGetValue(VhdKey, out var vhdPath) &&
+            if (arguments.TryGetValue(VhdKey, out var wimPath) &&
+                wimPath is not null &&
+                Path.GetExtension(wimPath).Equals(".wim", StringComparison.OrdinalIgnoreCase) &&
+                arguments.TryGetValue(PartKey, out var wimNoStr) &&
+                wimNoStr is not null)
+            {
+                file_system = InitializeFromWim(wimPath, wimNoStr, access);
+            }
+            else if (arguments.TryGetValue(VhdKey, out var vhdPath) &&
                 vhdPath is not null &&
                 arguments.TryGetValue(PartKey, out var partNoStr) &&
                 partNoStr is not null)
@@ -439,6 +453,36 @@ mountdir    Directory where to mount the file system.
         {
             return FileSystemManager.DetectFileSystems(part_content).FirstOrDefault()?.Open(part_content);
         }
+    }
+
+    private static WimFileSystem? InitializeFromWim(string wimPath, string wimNoStr, FileAccess access)
+    {
+        if (string.IsNullOrWhiteSpace(wimPath))
+        {
+            throw new InvalidOperationException($"Missing value for argument: {VhdKey}");
+        }
+
+        if (!int.TryParse(wimNoStr, out var partNo))
+        {
+            throw new ArgumentException($"Invalid index number: {wimNoStr}");
+        }
+
+        var disk = new WimFile(File.Open(wimPath, FileMode.Open, access));
+
+        Console.WriteLine($"Opened image '{wimPath}', type WIM");
+
+        var partitions = disk.ImageCount;
+
+        if (partNo <= 0 && partNo >= partitions)
+        {
+            throw new DriveNotFoundException($"Index {partNo} not found");
+        }
+
+        var fs = disk.GetImage(partNo);
+
+        Console.WriteLine($"Opened index {partNo}");
+
+        return fs;
     }
 
     private static DiscFileSystem? InitializeFromVhd(string vhdPath, string partNoStr, FileAccess access)
