@@ -12,9 +12,9 @@
     <Company>LTR Data</Company>
     <PackageOutputPath>$(LocalNuGetPath)</PackageOutputPath>
     <Copyright>Copyright (C) Olof Lagerkvist, LTR Data 2022 - 2025</Copyright>
-    <Version>1.0.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
     <Company>LTR Data</Company>
     <Authors>Olof Lagerkvist</Authors>
     <PackageProjectUrl>https://github.com/LTRData/FuseDotNet</PackageProjectUrl>

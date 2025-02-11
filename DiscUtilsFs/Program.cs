@@ -58,6 +58,8 @@ internal static class DiscUtilsSupport
 public static class Program
 {
     private const string VhdKey = "--vhd";
+    private const string WimKey = "--wim";
+    private const string IndexKey = "--index";
     private const string PartKey = "--part";
     private const string FsKey = "--fs";
     private const string TmpKey = "--tmp";
@@ -101,10 +103,12 @@ public static class Program
 
             var fuse_args = args.Where(arg =>
                 !arg.StartsWith(VhdKey, StringComparison.Ordinal) &&
+                !arg.StartsWith(WimKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(TmpKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(DiscardKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(FsKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(PartKey, StringComparison.Ordinal) &&
+                !arg.StartsWith(IndexKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(NoExecKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(MetaFilesKey, StringComparison.Ordinal) &&
                 !arg.StartsWith(NetRedirKey, StringComparison.Ordinal) &&
@@ -137,10 +141,9 @@ public static class Program
 
             IFileSystem? file_system;
 
-            if (arguments.TryGetValue(VhdKey, out var wimPath) &&
+            if (arguments.TryGetValue(WimKey, out var wimPath) &&
                 wimPath is not null &&
-                Path.GetExtension(wimPath).Equals(".wim", StringComparison.OrdinalIgnoreCase) &&
-                arguments.TryGetValue(PartKey, out var wimNoStr) &&
+                arguments.TryGetValue(IndexKey, out var wimNoStr) &&
                 wimNoStr is not null)
             {
                 file_system = InitializeFromWim(wimPath, wimNoStr, access);
@@ -173,8 +176,10 @@ system implementations in user mode.
 
 Syntax:
 DiscUtilsFs --tmp [fuseoptions] mountdir
+DiscUtilsFs --discard [fuseoptions] mountdir
 DiscUtilsFs --vhd=image [--part=number] [-w] [-m] [fuseoptions] mountdir
 DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
+DiscUtilsFs --wim=image [--index=number] [fuseoptions] mountdir
 
 --tmp       Creates a temporary file system with in-memory file allocation
             that only last while the file system is mounted.
@@ -189,6 +194,10 @@ DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
             a file system that spans the entire image (no partition table).
 
 --fs        Opens a raw file system image file.
+
+--wim       Opens a WIM image file.
+
+--index     Index number of file system to open within WIM image file.
 
 -d          Debug message output to terminal. Implies -f.
 
@@ -471,14 +480,7 @@ mountdir    Directory where to mount the file system.
 
         Console.WriteLine($"Opened image '{wimPath}', type WIM");
 
-        var partitions = disk.ImageCount;
-
-        if (partNo <= 0 && partNo >= partitions)
-        {
-            throw new DriveNotFoundException($"Index {partNo} not found");
-        }
-
-        var fs = disk.GetImage(partNo);
+        var fs = disk.GetImage(partNo - 1);
 
         Console.WriteLine($"Opened index {partNo}");
 
