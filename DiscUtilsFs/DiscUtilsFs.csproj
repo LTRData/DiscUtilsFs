@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LTRData.DokanNet" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Dokan" Version="*" />
+    <PackageReference Include="DokanNet" Version="*" />
+    <PackageReference Include="LTRData.DiscUtils.MountDokan" Version="*" />
     <PackageReference Include="LTRData.FuseDotNet" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Fuse" Version="*" />
+    <PackageReference Include="LTRData.DiscUtils.MountFuse" Version="*" />
     <PackageReference Include="LTRData.DiscUtils.Btrfs" Version="*" />
     <PackageReference Include="LTRData.DiscUtils.Core" Version="*" />
     <PackageReference Include="LTRData.DiscUtils.Ext" Version="*" />

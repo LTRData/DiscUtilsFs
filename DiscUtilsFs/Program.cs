@@ -1,6 +1,6 @@
 using DiscUtils;
-using DiscUtils.Dokan;
-using DiscUtils.Fuse;
+using DiscUtils.MountDokan;
+using DiscUtils.MountFuse;
 using DiscUtils.Streams;
 using DiscUtils.VirtualFileSystem;
 using DiscUtils.Wim;
@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using FileAccess = System.IO.FileAccess;
 
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable IDE0057 // Use range operator
@@ -297,7 +298,7 @@ mountdir    Directory where to mount the file system.
 
                 try
                 {
-                    Dokan.Init();
+                    using var dokan = new Dokan(logger!);
 
                     var drive = new DriveInfo(mount_point);
 
@@ -310,19 +311,36 @@ mountdir    Directory where to mount the file system.
 
                             Console.WriteLine("Dismounting...");
 
-                            Dokan.RemoveMountPoint(mount_point);
+                            dokan.RemoveMountPoint(mount_point);
                         }
                     };
 
+                    var dokanBuilder = new DokanInstanceBuilder(dokan);
+
+                    if (logger is not null)
+                    {
+                        dokanBuilder.ConfigureLogger(() => logger);
+                    }
+
+                    dokanBuilder.ConfigureOptions(options =>
+                    {
+                        options.MountPoint = mount_point;
+                        options.Options = dokan_options;
+                        options.SingleThread = !file_system.IsThreadSafe;
+                        options.Version = 200;
+                        options.TimeOut = TimeSpan.FromSeconds(20.0);
+
+                        if (dokan_options.HasFlag(DokanOptions.NetworkDrive))
+                        {
+                            options.UNCName = @$"\DiscUtilsFs\{mount_point[0]}";
+                        }
+                    });
+
+                    using var instance = dokanBuilder.Build(dokan_discutils);
+
                     Console.WriteLine("Press Ctrl+C to dismount.");
 
-                    dokan_discutils.Mount(mount_point!,
-                                          dokan_options,
-                                          file_system.CanWrite && !file_system.IsThreadSafe,
-                                          version: 200,
-                                          timeout: TimeSpan.FromSeconds(20.0),
-                                          uncName: dokan_options.HasFlag(DokanOptions.NetworkDrive) ? @$"\DiscUtilsFs\{mount_point[0]}" : null!,
-                                          logger);
+                    instance.WaitForFileSystemClosed(uint.MaxValue);
 
                     Console.WriteLine("Dismounted.");
                 }
@@ -506,14 +524,16 @@ mountdir    Directory where to mount the file system.
 
         Console.WriteLine($"Opened image '{vhdPath}', type {disk.DiskTypeInfo.Name}");
 
-        var partitions = disk.Partitions;
+        var volmgr = new VolumeManager(disk);
 
-        if (partNo > 0 && (partitions is null || partNo > partitions.Count))
+        var volumes = volmgr.GetLogicalVolumes();
+
+        if (partNo > 0 && (volumes is null || partNo > volumes.Length))
         {
-            throw new DriveNotFoundException($"Partition {partNo} not found");
+            throw new DriveNotFoundException($"Volume {partNo} not found");
         }
 
-        if (partitions is null || partNo == 0 || partitions.Count == 0)
+        if (volumes is null || partNo == 0 || volumes.Length == 0)
         {
             var disk_content = disk.Content;
 
@@ -521,13 +541,11 @@ mountdir    Directory where to mount the file system.
         }
         else
         {
-            Console.WriteLine($"Found partition table, type {partitions.GetType().Name}");
+            var volume = volumes[partNo - 1];
 
-            var part = partitions[partNo - 1];
+            Console.WriteLine($"Found partition type {volume.TypeAsString}");
 
-            Console.WriteLine($"Found partition type {part.TypeAsString}");
-
-            var part_content = part.Open();
+            var part_content = volume.Open();
 
             return FileSystemManager.DetectFileSystems(part_content).FirstOrDefault()?.Open(part_content);
         }
