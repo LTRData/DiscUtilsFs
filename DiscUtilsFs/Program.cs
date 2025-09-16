@@ -394,7 +394,7 @@ mountdir    Directory where to mount the file system.
             Console.Error.WriteLine($@"Error: {ex.JoinMessages()}");
             Console.ResetColor();
 
-            return (int)ex.ToPosixResult();
+            return ex.HResult;
         }
     }
 
