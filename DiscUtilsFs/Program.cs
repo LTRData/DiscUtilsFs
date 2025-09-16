@@ -123,11 +123,6 @@ public static class Program
 
             var dokan_options = default(DokanOptions);
 
-            var mount_point = args
-                .Where(arg => !arg.StartsWith("-", StringComparison.Ordinal))
-                .LastOrDefault()
-                ?? throw new InvalidOperationException("Missing mount point");
-
             var access = arguments.ContainsKey(WritableKey)
                 ? FileAccess.ReadWrite
                 : FileAccess.Read;
@@ -143,19 +138,21 @@ public static class Program
             IFileSystem? file_system;
 
             if (arguments.TryGetValue(WimKey, out var wimPath) &&
-                wimPath is not null &&
-                arguments.TryGetValue(IndexKey, out var wimNoStr) &&
-                wimNoStr is not null)
+                wimPath is not null)
             {
-                file_system = InitializeFromWim(wimPath, wimNoStr, access);
+				if (arguments.TryGetValue(IndexKey, out var wimNoStr) && wimNoStr is not null)
+					file_system = InitializeFromWim(wimPath, wimNoStr, access);
+				else
+					throw new ArgumentException($"Missing value for argument: {IndexKey}= required for {VhdKey}");
             }
             else if (arguments.TryGetValue(VhdKey, out var vhdPath) &&
-                vhdPath is not null &&
-                arguments.TryGetValue(PartKey, out var partNoStr) &&
-                partNoStr is not null)
+                vhdPath is not null)
             {
-                file_system = InitializeFromVhd(vhdPath, partNoStr, access);
-            }
+				if ( arguments.TryGetValue(PartKey, out var partNoStr) && partNoStr is not null)
+                    file_system = InitializeFromVhd(vhdPath, partNoStr, access);
+				else
+					throw new ArgumentException($"Missing value for argument: {PartKey}= required for {VhdKey}");
+			}
             else if (arguments.TryGetValue(FsKey, out var fsPath) &&
                 fsPath is not null)
             {
@@ -178,9 +175,9 @@ system implementations in user mode.
 Syntax:
 DiscUtilsFs --tmp [fuseoptions] mountdir
 DiscUtilsFs --discard [fuseoptions] mountdir
-DiscUtilsFs --vhd=image [--part=number] [-w] [-m] [fuseoptions] mountdir
+DiscUtilsFs --vhd=image --part=number [-w] [-m] [fuseoptions] mountdir
 DiscUtilsFs --fs=image [-w] [-m] [fuseoptions] mountdir
-DiscUtilsFs --wim=image [--index=number] [fuseoptions] mountdir
+DiscUtilsFs --wim=image --index=number [fuseoptions] mountdir
 
 --tmp       Creates a temporary file system with in-memory file allocation
             that only last while the file system is mounted.
@@ -225,6 +222,10 @@ mountdir    Directory where to mount the file system.
                     return (int)Fuse.CallMain(fuse_args);
                 }
             }
+			var mount_point = args
+                .Where(arg => !arg.StartsWith("-", StringComparison.Ordinal))
+                .LastOrDefault()
+                ?? throw new InvalidOperationException("Missing mount point");
 
             if (file_system is null)
             {
@@ -255,6 +256,12 @@ mountdir    Directory where to mount the file system.
             else
             {
                 logger?.Info($"Read-only file system");
+				if (access.HasFlag(FileAccess.Write))
+				{
+					Console.ForegroundColor = ConsoleColor.Yellow;
+					Console.Error.WriteLine("Write access requested but the DiscUtils file system driver does not support, mounting read only");
+					Console.ResetColor();
+				}
 
                 fuse_args = fuse_args
                     .Append("-o").Append("ro,noforget,kernel_cache");
