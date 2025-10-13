@@ -213,15 +213,20 @@ fuseoptions Options to pass on to fuse, for example -o noforget.
 mountdir    Directory where to mount the file system.
 ");
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return -1;
-                }
-                else
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+#if NETCOREAPP
+                    || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD)
+#endif
+                    )
                 {
                     return (int)Fuse.CallMain(fuse_args);
                 }
+                else
+                {
+                    return -1;
+                }
             }
+
 			var mount_point = args
                 .Where(arg => !arg.StartsWith("-", StringComparison.Ordinal))
                 .LastOrDefault()
@@ -360,7 +365,11 @@ mountdir    Directory where to mount the file system.
                     return ex.HResult;
                 }
             }
-            else
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+#if NETCOREAPP
+                    || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD)
+#endif
+                    )
             {
                 FuseDiscUtilsOptions options = default;
 
@@ -379,7 +388,7 @@ mountdir    Directory where to mount the file system.
 
                     Console.WriteLine("Dismounted.");
 
-                    logger?.Debug($"Dismounted.");
+                    logger?.Debug("Dismounted.");
                 }
                 catch (PosixException ex)
                 {
@@ -390,12 +399,16 @@ mountdir    Directory where to mount the file system.
                     return (int)ex.NativeErrorCode;
                 }
             }
+            else
+            {
+                throw new PlatformNotSupportedException("This application runs on Linux, FreeBSD or Windows.");
+            }
 
             return 0;
         }
         catch (Exception ex)
         {
-            logger?.Error($"{ex}");
+            logger?.Error("{0}", ex);
 
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine($@"Error: {ex.JoinMessages()}");
