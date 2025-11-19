@@ -31,8 +31,7 @@
     <PackageReference Include="LTRData.DiscUtils.Vmdk" Version="*" />
     <PackageReference Include="LTRData.DiscUtils.Wim" Version="*" />
     <PackageReference Include="LTRData.DiscUtils.Xfs" Version="*" />
-    <PackageReference Include="LTRData.ExFat.Core" Version="*" />
-    <PackageReference Include="LTRData.ExFat.DiscUtils" Version="*" />
+    <PackageReference Include="LTRData.DiscUtils.ExFat" Version="*" />
   </ItemGroup>
 
 </Project>

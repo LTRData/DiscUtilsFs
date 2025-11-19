@@ -44,7 +44,7 @@ internal static class DiscUtilsSupport
         typeof(DiscUtils.Wim.WimFileSystem).Assembly,
         typeof(DiscUtils.Vmdk.Disk).Assembly,
         typeof(DiscUtils.Xfs.XfsFileSystem).Assembly,
-        typeof(ExFat.DiscUtils.ExFatFileSystem).Assembly
+        typeof(DiscUtils.ExFat.ExFatFileSystem).Assembly
     ];
 
     public static void RegisterAssemblies()

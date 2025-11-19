@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0;netstandard2.1;net48</TargetFrameworks>
+    <TargetFrameworks>net10.0;net9.0;net8.0;netstandard2.1;net48</TargetFrameworks>
     <OutputPath>../$(Configuration)/</OutputPath>
     <LangVersion>Latest</LangVersion>
     <Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
     <Company>LTR Data</Company>
     <PackageOutputPath>$(LocalNuGetPath)</PackageOutputPath>
     <Copyright>Copyright (C) Olof Lagerkvist, LTR Data 2022 - 2025</Copyright>
-    <Version>1.0.1.1</Version>
+    <Version>1.0.1.2</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <Company>LTR Data</Company>
