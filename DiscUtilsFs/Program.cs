@@ -6,7 +6,6 @@ using DiscUtils.VirtualFileSystem;
 using DiscUtils.Wim;
 using DokanNet;
 using FuseDotNet;
-using FuseDotNet.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,41 +19,6 @@ using FileAccess = System.IO.FileAccess;
 #pragma warning disable CA1865 // Use char overload
 
 namespace DiscUtilsFs;
-
-internal static class DiscUtilsSupport
-{
-    private static readonly Assembly[] Asms =
-    [
-        typeof(DiscUtils.Btrfs.BtrfsFileSystem).Assembly,
-        typeof(DiscUtils.Ext.ExtFileSystem).Assembly,
-        typeof(DiscUtils.Fat.FatFileSystem).Assembly,
-        typeof(DiscUtils.HfsPlus.HfsPlusFileSystem).Assembly,
-        typeof(DiscUtils.Iso9660.CDReader).Assembly,
-        typeof(DiscUtils.Lvm.LogicalVolumeManager).Assembly,
-        typeof(DiscUtils.Nfs.NfsFileSystem).Assembly,
-        typeof(DiscUtils.Ntfs.NtfsFileSystem).Assembly,
-        typeof(DiscUtils.Registry.RegistryHive).Assembly,
-        typeof(DiscUtils.SquashFs.SquashFileSystemReader).Assembly,
-        typeof(DiscUtils.Swap.SwapFileSystem).Assembly,
-        typeof(DiscUtils.Udf.UdfReader).Assembly,
-        typeof(DiscUtils.Vdi.Disk).Assembly,
-        typeof(DiscUtils.Vhd.Disk).Assembly,
-        typeof(DiscUtils.Vhdx.Disk).Assembly,
-        typeof(DiscUtils.VirtualFileSystem.TarFileSystem).Assembly,
-        typeof(DiscUtils.Wim.WimFileSystem).Assembly,
-        typeof(DiscUtils.Vmdk.Disk).Assembly,
-        typeof(DiscUtils.Xfs.XfsFileSystem).Assembly,
-        typeof(DiscUtils.ExFat.ExFatFileSystem).Assembly
-    ];
-
-    public static void RegisterAssemblies()
-    {
-        foreach (var asm in Asms.Distinct())
-        {
-            DiscUtils.Setup.SetupHelper.RegisterAssembly(asm);
-        }
-    }
-}
 
 public static class Program
 {
@@ -78,7 +42,7 @@ public static class Program
 
         try
         {
-            DiscUtilsSupport.RegisterAssemblies();
+            DiscUtils.Complete.SetupHelper.SetupComplete();
 
             var arguments = args
                 .Where(x => x.StartsWith("-", StringComparison.Ordinal))

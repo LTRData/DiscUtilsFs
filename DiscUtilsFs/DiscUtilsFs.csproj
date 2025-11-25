@@ -6,32 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DokanNet" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.MountDokan" Version="*" />
-    <PackageReference Include="LTRData.FuseDotNet" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.MountFuse" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Btrfs" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Core" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Ext" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Fat" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.HfsPlus" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Iso9660" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Lvm" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Nfs" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Ntfs" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Registry" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.SquashFs" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Streams" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Swap" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Udf" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Vdi" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Vhd" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Vhdx" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.VirtualFileSystem" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Vmdk" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Wim" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.Xfs" Version="*" />
-    <PackageReference Include="LTRData.DiscUtils.ExFat" Version="*" />
+	<PackageReference Include="LTRData.DiscUtils" Version="*" />
+	<PackageReference Include="LTRData.DiscUtils.MountDokan" Version="*" />
+	<PackageReference Include="LTRData.DiscUtils.MountFuse" Version="*" />
   </ItemGroup>
 
 </Project>
