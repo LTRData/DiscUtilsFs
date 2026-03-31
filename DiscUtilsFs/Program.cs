@@ -107,7 +107,7 @@ public static class Program
 				if (arguments.TryGetValue(IndexKey, out var wimNoStr) && wimNoStr is not null)
 					file_system = InitializeFromWim(wimPath, wimNoStr, access);
 				else
-					throw new ArgumentException($"Missing value for argument: {IndexKey}= required for {VhdKey}");
+					throw new ArgumentException($"Missing value for argument: {IndexKey}= required for {WimKey}");
             }
             else if (arguments.TryGetValue(VhdKey, out var vhdPath) &&
                 vhdPath is not null)
